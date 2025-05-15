@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,13 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				tiktok: {
+					DEFAULT: '#000000',
+					foreground: '#FFFFFF',
+					primary: '#25F4EE', // Teal
+					secondary: '#FE2C55', // Reddish-Pink
+					accent: '#69C9D0'     // Light Teal
 				}
 			},
 			borderRadius: {
@@ -84,11 +92,21 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'pulse-tiktok': {
+					'0%, 100%': { opacity: '1' },
+					'50%': { opacity: '0.5' }
+				},
+				'rotate-center': {
+					'0%': { transform: 'rotate(0)' },
+					'100%': { transform: 'rotate(360deg)' }
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'pulse-tiktok': 'pulse-tiktok 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+				'rotate-center': 'rotate-center 1s linear infinite'
 			}
 		}
 	},

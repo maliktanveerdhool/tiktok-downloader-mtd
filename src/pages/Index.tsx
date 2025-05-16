@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { FileVideo, Download, Share2 } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
@@ -15,33 +14,28 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [downloadInfo, setDownloadInfo] = useState<TikTokVideoResponse | null>(null);
-  const [isDemoMode, setIsDemoMode] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleUrlSubmit = async (url: string) => {
     setIsLoading(true);
     setDownloadInfo(null);
-    setIsDemoMode(false);
+    setErrorMessage(null);
     
     try {
       // Call our service to download the TikTok video
       const result = await downloadTikTokVideo(url);
       
-      if (result.error) {
-        toast.error(result.error);
-        setIsLoading(false);
-        return;
-      }
-      
-      // Check if we're using the fallback (demo) mode
-      if (result.url.includes('storage.googleapis.com')) {
-        setIsDemoMode(true);
+      if (!result.url) {
+        throw new Error("Failed to get download URL");
       }
       
       // Success - set the download information
       setDownloadInfo(result);
       toast.success('Video processed successfully!');
     } catch (error) {
-      toast.error('Failed to process TikTok URL');
+      const errorMsg = error instanceof Error ? error.message : 'Failed to process TikTok URL';
+      toast.error(errorMsg);
+      setErrorMessage(errorMsg);
       console.error("Error processing TikTok URL:", error);
     } finally {
       setIsLoading(false);
@@ -50,6 +44,7 @@ const Index = () => {
 
   const resetDownload = () => {
     setDownloadInfo(null);
+    setErrorMessage(null);
   };
 
   return (
@@ -57,14 +52,13 @@ const Index = () => {
       <Navbar />
       
       <main className="flex-grow pt-20">
-        {/* Demo Mode Alert - Only show if in demo mode */}
-        {isDemoMode && (
+        {/* Error Alert - Only show if there's an error */}
+        {errorMessage && (
           <div className="max-w-5xl mx-auto px-4 mt-4">
-            <Alert className="bg-yellow-900/20 border-yellow-600 text-yellow-200">
-              <AlertTitle className="text-yellow-300">Demo Mode Active</AlertTitle>
+            <Alert className="bg-red-900/20 border-red-600 text-red-200">
+              <AlertTitle className="text-red-300">Error</AlertTitle>
               <AlertDescription>
-                The TikTok API might be experiencing issues or the video URL format is not supported.
-                A sample video is being provided for demonstration purposes.
+                {errorMessage}. Please try again with a different TikTok URL or check if the URL is valid.
               </AlertDescription>
             </Alert>
           </div>

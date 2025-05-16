@@ -1,4 +1,3 @@
-import { fetchVideo } from "tiktok-scraper-ts";
 
 export interface TikTokVideoResponse {
   url: string;
@@ -13,15 +12,22 @@ export async function downloadTikTokVideo(url: string): Promise<TikTokVideoRespo
   try {
     console.log(`Processing TikTok URL: ${url}`);
     
-    // Use RapidAPI TikTok video downloader
-    const response = await fetch('https://tiktok-video-downloader-api-no-watermark.p.rapidapi.com/tiktok', {
-      method: 'POST',
+    // Extract video ID from the TikTok URL
+    const videoId = extractVideoId(url);
+    
+    if (!videoId) {
+      throw new Error("Could not extract video ID from the URL");
+    }
+    
+    console.log(`Extracted video ID: ${videoId}`);
+    
+    // Use the tiktok-video-no-watermark2 RapidAPI endpoint
+    const response = await fetch(`https://tiktok-video-no-watermark2.p.rapidapi.com/video/data?video_id=${videoId}`, {
+      method: 'GET',
       headers: {
         'x-rapidapi-key': 'a3f4e4bf05msh8297f426407dbecp1c245fjsn009592560ff3',
-        'x-rapidapi-host': 'tiktok-video-downloader-api-no-watermark.p.rapidapi.com',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ url })
+        'x-rapidapi-host': 'tiktok-video-no-watermark2.p.rapidapi.com'
+      }
     });
 
     if (!response.ok) {
@@ -29,70 +35,87 @@ export async function downloadTikTokVideo(url: string): Promise<TikTokVideoRespo
     }
 
     const data = await response.json();
-    console.log('RapidAPI response:', data);
+    console.log('RapidAPI tiktok-video-no-watermark2 response:', data);
     
-    // Check if the API returned an error
-    if (!data || !data.data || data.code !== 0) {
-      console.error("API returned an error:", data);
-      return useBrowserFallback(url);
+    // Check if the API returned valid data
+    if (!data || !data.data) {
+      throw new Error("Invalid response from API");
     }
     
     // Extract video information from the API response
     const videoData = data.data;
     
+    // Find the no watermark URL in the response
+    let downloadUrl = "";
+    if (videoData.play) {
+      downloadUrl = videoData.play;
+    } else if (videoData.video && videoData.video.playAddr) {
+      downloadUrl = videoData.video.playAddr;
+    } else if (videoData.video && videoData.video.downloadAddr) {
+      downloadUrl = videoData.video.downloadAddr;
+    } else if (Array.isArray(videoData.itemStruct?.video?.playAddr) && videoData.itemStruct.video.playAddr.length > 0) {
+      downloadUrl = videoData.itemStruct.video.playAddr[0];
+    }
+    
+    // If no URL found, try to get it from alternate location in response
+    if (!downloadUrl && videoData.itemStruct && videoData.itemStruct.video) {
+      const videoFormats = videoData.itemStruct.video.bitRateList || [];
+      if (videoFormats.length > 0) {
+        // Get highest quality video
+        const sortedFormats = [...videoFormats].sort((a, b) => b.bitRate - a.bitRate);
+        downloadUrl = sortedFormats[0]?.playAddr || "";
+      }
+    }
+    
+    if (!downloadUrl) {
+      throw new Error("Could not find download URL in the API response");
+    }
+    
+    // Get video details
+    const title = videoData.title || videoData.desc || `TikTok Video ${videoId}`;
+    const author = videoData.author?.nickname || videoData.author?.uniqueId || "TikTok Creator";
+    const cover = videoData.cover || videoData.dynamicCover || videoData.originCover || "";
+    
     return {
-      url: videoData.play || videoData.hdplay || "",
+      url: downloadUrl,
       type: 'video',
-      title: videoData.title || `TikTok Video`,
-      author: videoData.author?.nickname || "TikTok Creator",
-      cover: videoData.cover || videoData.dynamicCover || ""
+      title: title,
+      author: author,
+      cover: cover
     };
   } catch (error) {
     console.error("Error downloading TikTok video:", error);
     
-    // For browser environment fallback if the API doesn't work
-    console.log("Using fallback for browser environment");
-    return useBrowserFallback(url);
+    throw error; // Rethrow so we can handle it in the UI
   }
-}
-
-// Fallback for browser environment with demo video
-async function useBrowserFallback(url: string): Promise<TikTokVideoResponse> {
-  // Extract video ID for demonstration
-  const videoId = extractVideoId(url);
-  
-  if (!videoId) {
-    return {
-      url: "",
-      type: "video",
-      title: "",
-      author: "",
-      error: "Could not extract video ID from URL"
-    };
-  }
-  
-  return {
-    url: `https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4`,
-    type: 'video',
-    title: `TikTok Video ${videoId}`,
-    author: "TikTok Creator (Demo Mode)",
-    cover: "https://storage.googleapis.com/gtv-videos-bucket/sample/images/BigBuckBunny.jpg"
-  };
 }
 
 // Helper function to extract video ID from TikTok URL
 function extractVideoId(url: string): string | null {
   try {
-    // Handle different TikTok URL formats
-    const regularUrlMatch = url.match(/tiktok\.com\/@[\w.-]+\/video\/(\d+)/i);
-    const shortUrlMatch = url.match(/vm\.tiktok\.com\/(\w+)/i) || url.match(/vt\.tiktok\.com\/(\w+)/i);
-    
+    // Handle regular TikTok URLs
+    let regularUrlMatch = url.match(/tiktok\.com\/@[\w.-]+\/video\/(\d+)/i);
     if (regularUrlMatch && regularUrlMatch[1]) {
       return regularUrlMatch[1];
     }
     
-    if (shortUrlMatch && shortUrlMatch[1]) {
+    // Handle shortened URLs
+    let shortUrlMatch = url.match(/vm\.tiktok\.com\/(\w+)/i) || url.match(/vt\.tiktok\.com\/(\w+)/i);
+    if (shortUrlMatch) {
+      // For short URLs, we might need to resolve them first, but we'll try with the short ID
       return shortUrlMatch[1];
+    }
+    
+    // Additional pattern for mobile URLs
+    let mobileUrlMatch = url.match(/tiktok\.com\/t\/(\w+)/i);
+    if (mobileUrlMatch) {
+      return mobileUrlMatch[1];
+    }
+    
+    // Try to match any numeric sequence that could be a video ID
+    let genericIdMatch = url.match(/\/video\/(\d+)/i) || url.match(/[\?&]video_id=(\d+)/i);
+    if (genericIdMatch && genericIdMatch[1]) {
+      return genericIdMatch[1];
     }
     
     return null;

@@ -14,11 +14,13 @@ const UrlInput: React.FC<UrlInputProps> = ({ onUrlSubmit, isLoading }) => {
   const [url, setUrl] = useState('');
   
   const validateTikTokUrl = (url: string): boolean => {
-    // Basic validation for TikTok URLs
+    // Enhanced validation for TikTok URLs
     const patterns = [
       /https?:\/\/(www\.)?tiktok\.com\/@[\w.-]+\/video\/\d+/i,
       /https?:\/\/(www\.)?vm\.tiktok\.com\/\w+/i,
       /https?:\/\/(www\.)?vt\.tiktok\.com\/\w+/i,
+      /https?:\/\/(www\.)?tiktok\.com\/t\/\w+/i,
+      /https?:\/\/(www\.)?m\.tiktok\.com\/v\/\d+/i
     ];
     
     return patterns.some(pattern => pattern.test(url));
@@ -47,8 +49,11 @@ const UrlInput: React.FC<UrlInputProps> = ({ onUrlSubmit, isLoading }) => {
         if (text && validateTikTokUrl(text)) {
           setUrl(text);
           toast.success('TikTok URL pasted!');
+        } else if (text) {
+          setUrl(text);
+          toast.warning('The pasted text doesn\'t look like a valid TikTok URL, but we\'ll try to process it anyway.');
         } else {
-          toast.error('Clipboard does not contain a valid TikTok URL');
+          toast.error('Could not access clipboard');
         }
       })
       .catch(() => {
@@ -58,6 +63,20 @@ const UrlInput: React.FC<UrlInputProps> = ({ onUrlSubmit, isLoading }) => {
   
   const handleClear = () => {
     setUrl('');
+  };
+  
+  const renderExample = () => {
+    const exampleUrl = "https://www.tiktok.com/@username/video/1234567890123456789";
+    return (
+      <Button 
+        type="button"
+        variant="ghost"
+        className="text-xs text-tiktok-primary hover:text-tiktok-accent"
+        onClick={() => setUrl(exampleUrl)}
+      >
+        Use Example
+      </Button>
+    );
   };
   
   return (
@@ -106,8 +125,14 @@ const UrlInput: React.FC<UrlInputProps> = ({ onUrlSubmit, isLoading }) => {
           {isLoading ? 'Processing...' : 'Download'}
         </Button>
       </div>
-      <div className="text-xs text-gray-400 text-center">
-        Supported formats: TikTok video links (www.tiktok.com/@user/video/id, vm.tiktok.com, vt.tiktok.com)
+      <div className="text-xs text-gray-400 text-center flex flex-col gap-1">
+        <div>
+          Supported formats: TikTok video links (www.tiktok.com/@user/video/id, vm.tiktok.com, vt.tiktok.com)
+        </div>
+        <div className="flex justify-center items-center gap-2">
+          <span>Need an example?</span>
+          {renderExample()}
+        </div>
       </div>
     </form>
   );

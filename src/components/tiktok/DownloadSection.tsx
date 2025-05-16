@@ -31,15 +31,21 @@ const DownloadSection: React.FC<DownloadSectionProps> = ({
         : `tiktok-${Date.now()}.${fileExtension}`;
         
       link.download = fileName;
-      link.target = "_blank";
+      link.target = "_blank"; // Open in new tab which helps with some browsers
+      
+      // For direct download, we need to handle cross-origin issues
+      // Sometimes using window.open works better for some URLs
+      window.open(videoUrl, '_blank');
+      
+      // Also try the traditional approach as a fallback
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       
-      toast.success('Download started!');
+      toast.success('Download started! If nothing happens, try right-clicking the video and select "Save as"');
     } catch (error) {
       console.error("Download error:", error);
-      toast.error('Download failed. Please try again.');
+      toast.error('Download failed. Please try right-clicking the video player and select "Save video as"');
     }
   };
 
@@ -71,6 +77,21 @@ const DownloadSection: React.FC<DownloadSectionProps> = ({
         
         <p className="text-gray-400">Click the button below to download your TikTok {videoInfo?.type || 'media'}</p>
         
+        {/* Add video preview */}
+        <div className="max-w-md mx-auto my-4">
+          <video 
+            src={videoUrl} 
+            controls 
+            poster={videoInfo?.cover} 
+            className="w-full rounded-lg border border-tiktok-secondary/30"
+          >
+            Your browser does not support the video tag.
+          </video>
+          <p className="text-xs text-gray-400 mt-2">
+            If video doesn't play, click the download button below
+          </p>
+        </div>
+        
         <div className="flex flex-col sm:flex-row justify-center gap-4 mt-6">
           <Button
             onClick={handleDownload}
@@ -87,6 +108,15 @@ const DownloadSection: React.FC<DownloadSectionProps> = ({
           >
             Download Another
           </Button>
+        </div>
+        
+        <div className="text-xs text-gray-400 mt-4">
+          <p>If the download button doesn't work, you can:</p>
+          <ol className="list-decimal list-inside mt-2 text-left max-w-xs mx-auto">
+            <li>Right-click on the video above</li>
+            <li>Select "Save video as..."</li>
+            <li>Choose a location on your device to save the video</li>
+          </ol>
         </div>
       </div>
     </div>

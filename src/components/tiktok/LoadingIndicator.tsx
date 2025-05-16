@@ -6,7 +6,7 @@ interface LoadingIndicatorProps {
 }
 
 const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({ 
-  text = "Processing video..." 
+  text = "Processing TikTok media..." 
 }) => {
   return (
     <div className="flex flex-col items-center justify-center p-8 animate-in fade-in-50 duration-300">
@@ -17,6 +17,7 @@ const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
         </div>
       </div>
       <p className="mt-4 text-white text-lg">{text}</p>
+      <p className="text-gray-400 text-sm mt-2">This may take a moment...</p>
     </div>
   );
 };

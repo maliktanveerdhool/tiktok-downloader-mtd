@@ -9,28 +9,39 @@ import DownloadSection from '@/components/tiktok/DownloadSection';
 import FeatureCard from '@/components/tiktok/FeatureCard';
 import TikTokLogo from '@/components/tiktok/TikTokLogo';
 import { toast } from '@/components/ui/sonner';
+import { downloadTikTokVideo, TikTokVideoResponse } from '@/services/tiktokService';
 
 const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+  const [downloadInfo, setDownloadInfo] = useState<TikTokVideoResponse | null>(null);
 
-  const handleUrlSubmit = (url: string) => {
+  const handleUrlSubmit = async (url: string) => {
     setIsLoading(true);
-    setDownloadUrl(null);
+    setDownloadInfo(null);
     
-    // Simulate API call to backend service
-    // In a real app, this would call a backend server with NestJS
-    setTimeout(() => {
-      setIsLoading(false);
-      // Mock successful download URL - in a real app this would come from the server
-      setDownloadUrl('https://example.com/mock-video.mp4');
+    try {
+      // Call our service to download the TikTok video
+      const result = await downloadTikTokVideo(url);
       
+      if (result.error) {
+        toast.error(result.error);
+        setIsLoading(false);
+        return;
+      }
+      
+      // Success - set the download information
+      setDownloadInfo(result);
       toast.success('Video processed successfully!');
-    }, 2500);
+    } catch (error) {
+      toast.error('Failed to process TikTok URL');
+      console.error("Error processing TikTok URL:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const resetDownload = () => {
-    setDownloadUrl(null);
+    setDownloadInfo(null);
   };
 
   return (
@@ -57,7 +68,13 @@ const Index = () => {
             
             {isLoading && <LoadingIndicator />}
             
-            {downloadUrl && <DownloadSection videoUrl={downloadUrl} resetDownload={resetDownload} />}
+            {downloadInfo && (
+              <DownloadSection 
+                videoUrl={downloadInfo.url} 
+                resetDownload={resetDownload}
+                videoInfo={downloadInfo}
+              />
+            )}
           </div>
         </section>
         

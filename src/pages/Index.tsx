@@ -10,6 +10,7 @@ import FeatureCard from '@/components/tiktok/FeatureCard';
 import TikTokLogo from '@/components/tiktok/TikTokLogo';
 import { toast } from '@/components/ui/sonner';
 import { downloadTikTokVideo, TikTokVideoResponse } from '@/services/tiktokService';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -49,6 +50,17 @@ const Index = () => {
       <Navbar />
       
       <main className="flex-grow pt-20">
+        {/* Demo Mode Alert */}
+        <div className="max-w-5xl mx-auto px-4 mt-4">
+          <Alert className="bg-yellow-900/20 border-yellow-600 text-yellow-200">
+            <AlertTitle className="text-yellow-300">Demo Mode Active</AlertTitle>
+            <AlertDescription>
+              This is a demo implementation. The TikTok API library used requires a server-side implementation.
+              The download will provide a sample video for demonstration purposes.
+            </AlertDescription>
+          </Alert>
+        </div>
+        
         {/* Hero Section */}
         <section className="py-16 md:py-24 px-4">
           <div className="max-w-5xl mx-auto text-center">

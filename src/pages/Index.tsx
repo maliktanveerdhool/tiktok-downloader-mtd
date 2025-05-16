@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { FileVideo, Download, Share2 } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
@@ -25,13 +26,14 @@ const Index = () => {
       // Call our service to download the TikTok video
       const result = await downloadTikTokVideo(url);
       
-      if (!result.url) {
-        throw new Error("Failed to get download URL");
+      if (result.error) {
+        toast.warning(`Note: ${result.error}. We'll show you the video but direct download may not work.`);
+      } else {
+        toast.success('Video processed successfully!');
       }
       
-      // Success - set the download information
+      // Set the download information
       setDownloadInfo(result);
-      toast.success('Video processed successfully!');
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Failed to process TikTok URL';
       toast.error(errorMsg);

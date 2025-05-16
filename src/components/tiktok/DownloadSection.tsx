@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Download, User } from 'lucide-react';
+import { Download, User, ExternalLink } from 'lucide-react';
 import { toast } from '@/components/ui/sonner';
 import { TikTokVideoResponse } from '@/services/tiktokService';
 
@@ -18,8 +18,17 @@ const DownloadSection: React.FC<DownloadSectionProps> = ({
 }) => {
   if (!videoUrl) return null;
 
+  const isEmbedUrl = videoUrl.includes('tiktok.com/embed');
+  
   const handleDownload = () => {
     try {
+      if (isEmbedUrl) {
+        // If it's an embed URL, open in new tab
+        window.open(videoUrl, '_blank');
+        toast.info('Opening video in new tab. You can use browser tools to save it.');
+        return;
+      }
+      
       // Create an anchor element and trigger download
       const link = document.createElement('a');
       link.href = videoUrl;
@@ -34,7 +43,6 @@ const DownloadSection: React.FC<DownloadSectionProps> = ({
       link.target = "_blank"; // Open in new tab which helps with some browsers
       
       // For direct download, we need to handle cross-origin issues
-      // Sometimes using window.open works better for some URLs
       window.open(videoUrl, '_blank');
       
       // Also try the traditional approach as a fallback
@@ -75,20 +83,41 @@ const DownloadSection: React.FC<DownloadSectionProps> = ({
           </div>
         )}
         
-        <p className="text-gray-400">Click the button below to download your TikTok {videoInfo?.type || 'media'}</p>
+        {videoInfo?.error && (
+          <div className="text-amber-400 text-sm bg-amber-950/30 p-3 rounded-md">
+            Note: {videoInfo.error}. Direct download may not work. 
+            You can try right-clicking on the video and selecting "Save As".
+          </div>
+        )}
+        
+        <p className="text-gray-400">
+          {isEmbedUrl 
+            ? "Click to watch the TikTok video in a new tab" 
+            : "Click the button below to download your TikTok video"}
+        </p>
         
         {/* Add video preview */}
         <div className="max-w-md mx-auto my-4">
-          <video 
-            src={videoUrl} 
-            controls 
-            poster={videoInfo?.cover} 
-            className="w-full rounded-lg border border-tiktok-secondary/30"
-          >
-            Your browser does not support the video tag.
-          </video>
+          {isEmbedUrl ? (
+            <iframe
+              src={videoUrl}
+              className="w-full h-[500px] rounded-lg border border-tiktok-secondary/30"
+              allowFullScreen
+            />
+          ) : (
+            <video 
+              src={videoUrl} 
+              controls 
+              poster={videoInfo?.cover} 
+              className="w-full rounded-lg border border-tiktok-secondary/30"
+            >
+              Your browser does not support the video tag.
+            </video>
+          )}
           <p className="text-xs text-gray-400 mt-2">
-            If video doesn't play, click the download button below
+            {isEmbedUrl 
+              ? "Click the Open button below to watch on TikTok" 
+              : "If video doesn't play, click the download button below"}
           </p>
         </div>
         
@@ -97,8 +126,17 @@ const DownloadSection: React.FC<DownloadSectionProps> = ({
             onClick={handleDownload}
             className="bg-gradient-to-r from-tiktok-primary to-tiktok-accent text-black px-6 py-6 h-auto text-lg font-medium hover:opacity-90"
           >
-            <Download className="mr-2 h-5 w-5" />
-            Download {videoInfo?.type === 'image' ? 'Image' : 'Video'}
+            {isEmbedUrl ? (
+              <>
+                <ExternalLink className="mr-2 h-5 w-5" />
+                Open Video
+              </>
+            ) : (
+              <>
+                <Download className="mr-2 h-5 w-5" />
+                Download {videoInfo?.type === 'image' ? 'Image' : 'Video'}
+              </>
+            )}
           </Button>
           
           <Button

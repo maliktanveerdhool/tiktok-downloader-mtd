@@ -1,4 +1,3 @@
-
 import { fetchVideo } from "tiktok-scraper-ts";
 
 export interface TikTokVideoResponse {
@@ -14,45 +13,46 @@ export async function downloadTikTokVideo(url: string): Promise<TikTokVideoRespo
   try {
     console.log(`Processing TikTok URL: ${url}`);
     
-    // Use tiktok-scraper-ts to get the video information and download URL
-    const videoInfo = await fetchVideo(url, true); // Second parameter true to get no watermark version
+    // Use RapidAPI TikTok video downloader
+    const response = await fetch('https://tiktok-video-downloader-api-no-watermark.p.rapidapi.com/tiktok', {
+      method: 'POST',
+      headers: {
+        'x-rapidapi-key': 'a3f4e4bf05msh8297f426407dbecp1c245fjsn009592560ff3',
+        'x-rapidapi-host': 'tiktok-video-downloader-api-no-watermark.p.rapidapi.com',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ url })
+    });
+
+    if (!response.ok) {
+      throw new Error(`API response error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('RapidAPI response:', data);
     
-    console.log('Video info:', videoInfo);
-    
-    if (!videoInfo || !videoInfo.downloadURL) {
-      return {
-        url: "",
-        type: "video",
-        title: "",
-        author: "",
-        error: "Could not extract video information"
-      };
+    // Check if the API returned an error
+    if (!data || !data.data || data.code !== 0) {
+      console.error("API returned an error:", data);
+      return useBrowserFallback(url);
     }
     
-    // Return the processed video information
+    // Extract video information from the API response
+    const videoData = data.data;
+    
     return {
-      url: videoInfo.downloadURL,
+      url: videoData.play || videoData.hdplay || "",
       type: 'video',
-      title: videoInfo.description || `TikTok Video ${videoInfo.id}`,
-      author: "TikTok Creator", // The library doesn't directly provide the author name
-      cover: videoInfo.cover || ""
+      title: videoData.title || `TikTok Video`,
+      author: videoData.author?.nickname || "TikTok Creator",
+      cover: videoData.cover || videoData.dynamicCover || ""
     };
   } catch (error) {
     console.error("Error downloading TikTok video:", error);
     
     // For browser environment fallback if the API doesn't work
-    if (typeof window !== 'undefined') {
-      console.log("Using fallback for browser environment");
-      return useBrowserFallback(url);
-    }
-    
-    return {
-      url: "",
-      type: "video",
-      title: "",
-      author: "",
-      error: error instanceof Error ? error.message : "Unknown error occurred"
-    };
+    console.log("Using fallback for browser environment");
+    return useBrowserFallback(url);
   }
 }
 

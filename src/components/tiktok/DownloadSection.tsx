@@ -31,6 +31,7 @@ const DownloadSection: React.FC<DownloadSectionProps> = ({
         : `tiktok-${Date.now()}.${fileExtension}`;
         
       link.download = fileName;
+      link.target = "_blank";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
